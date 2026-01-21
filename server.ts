@@ -6,15 +6,15 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 
 // Update these lines to match your actual file extensions in the src folder
-import { config, validateEnv } from './config/env.js';
-import { connectDatabase } from './config/database.js';
+import { config, validateEnv } from './src/config/env.js';
+import { connectDatabase } from './src/config/database.js';
 // import { errorHandler, notFound } from './middleware/errorHandlers.ts';
 
 // Do the same for routes
-import authRoutes from './routes/auth.js';
-import blogRoutes from './routes/blog.js';
-import eventRoutes from './routes/event.js';
-import { errorHandler, notFound } from './middleware/errorHandler.js';
+import authRoutes from './src/routes/auth.js';
+import blogRoutes from './src/routes/blog.js';
+import eventRoutes from './src/routes/event.js';
+import { errorHandler, notFound } from './src/middleware/errorHandler.js';
 // 1. Validate environment variables before doing anything else
 validateEnv();
 

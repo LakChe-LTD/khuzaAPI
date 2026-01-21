@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "node", // Or "nodenext" for stricter ESM
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ESNext"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -14,8 +14,9 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "removeComments": true
+    "removeComments": true,
+    "types": ["node"]
   },
-  "include": ["src/**/*", "src/server.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
