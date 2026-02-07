@@ -1,21 +1,21 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "node", // Or "nodenext" for stricter ESM
+    "module": "NodeNext",          // Better for ESM + Node.js (stricter path handling)
+    "moduleResolution": "NodeNext",
     "lib": ["ESNext"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",                // ← Change this to "." (current root)
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,          // Optional: Set to false if you don't need .d.ts files
+    "declarationMap": false,
     "sourceMap": true,
     "removeComments": true
   },
-  "include": ["src/**/*", "src/server.ts"],
+  "include": ["**/*.ts"],          // ← Compiles ALL .ts files in the project (safest)
   "exclude": ["node_modules", "dist"]
 }

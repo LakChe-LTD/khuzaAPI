@@ -5,83 +5,72 @@ import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 
-// Update these lines to match your actual file extensions in the src folder
 import { config, validateEnv } from './src/config/env.js';
 import { connectDatabase } from './src/config/database.js';
-// import { errorHandler, notFound } from './middleware/errorHandlers.ts';
-
-// Do the same for routes
 import authRoutes from './src/routes/auth.js';
 import blogRoutes from './src/routes/blog.js';
 import eventRoutes from './src/routes/event.js';
 import { errorHandler, notFound } from './src/middleware/errorHandler.js';
-// 1. Validate environment variables before doing anything else
+
+// Validate environment variables before starting
 validateEnv();
 
-// 2. Initialize express app
 const app: Application = express();
 
-// 3. Connect to database
+// Connect to MongoDB
 connectDatabase();
 
-// --- Middleware Stack ---
+// IMPORTANT: Trust proxy for rate limiting on hosting platforms (Render/Railway/Vercel)
+app.set('trust proxy', 1);
 
-app.use(helmet()); // Security headers
-app.use(
-  cors({
-    origin: config.cors.origin,
-    credentials: true,
-  })
-); 
+// Standard Middlewares
+app.use(helmet());
+app.use(cors({ 
+  origin: config.cors.origin, // Ensure this matches your frontend URL in .env
+  credentials: true 
+}));
+app.use(morgan('dev'));
+app.use(compression());
 
-app.use(morgan('dev')); // Logging
-app.use(compression()); // Gzip compression
-app.use(express.json({ limit: '10mb' })); // Body parser
+// Body Parsers (Increased limit to handle larger base64 images if needed)
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 4. Rate limiting to prevent brute force/DoS
+// Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, 
-  message: 'Too many requests from this IP, please try again later.',
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again after 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use('/api', limiter);
 
-// 5. Health check route
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: 'Khuza API is running',
-    timestamp: new Date().toISOString(),
+// Health Check Route (Great for monitoring and tallying with frontend connectivity tests)
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    success: true, 
+    message: 'Khuza API is active and healthy',
+    timestamp: new Date().toISOString()
   });
 });
 
-// 6. API Routes
+// Use Rate Limiter on all API routes
+app.use('/api', limiter);
+
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/events', eventRoutes);
 
-// 7. Error handling middleware (Must be last)
+// Error Handling (Must be last)
 app.use(notFound);
 app.use(errorHandler);
 
-// --- Server Start ---
-
-// Cast to number to satisfy TypeScript's app.listen requirements
-const PORT = Number(config.port) || 3000;
-
+const PORT = Number(config.port) || 5000;
 app.listen(PORT, () => {
-  console.log(`
-🚀 Server is running!
-📡 Port: ${PORT}
-🌍 Environment: ${config.nodeEnv}
-🔗 URL: http://localhost:${PORT}
-  `);
-});
-
-// 8. Handle unhandled promise rejections (e.g. Database connection issues)
-process.on('unhandledRejection', (reason: unknown) => {
-  console.error('❌ Unhandled Rejection:', reason instanceof Error ? reason.message : reason);
-  // Graceful shutdown
-  process.exit(1);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

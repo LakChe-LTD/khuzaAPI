@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx watch server.ts",
     "build": "tsc",
+    "seed": "tsx src/scripts/seedAdmin.ts",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,7 +27,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.0",
     "morgan": "^1.10.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "slugify": "^1.6.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
