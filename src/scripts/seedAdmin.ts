@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 // REMOVE bcrypt import, you don't need it here anymore
 import dotenv from 'dotenv';
 import Admin from '../models/Admin.js';
