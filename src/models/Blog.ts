@@ -4,14 +4,15 @@ export interface IBlog extends Document {
   title: string;
   slug: string;
   content: string;
-  excerpt: string;
+  highlightedQuote?: string;
   featuredImage: {
     url: string;
     publicId: string;
   };
   author: mongoose.Types.ObjectId;
-  category: string;
+  category?: string;
   tags: string[];
+  publishDate?: Date;
   status: 'draft' | 'published' | 'archived';
   publishedAt?: Date;
   views: number;
@@ -29,19 +30,18 @@ const blogSchema = new Schema<IBlog>(
     },
     slug: {
       type: String,
-      required: true,
       unique: true,
       lowercase: true,
       trim: true,
+      // Remove required: true to let pre-validate hook handle it
     },
     content: {
       type: String,
       required: [true, 'Content is required'],
     },
-    excerpt: {
+    highlightedQuote: {
       type: String,
-      required: [true, 'Excerpt is required'],
-      maxlength: [500, 'Excerpt cannot exceed 500 characters'],
+      maxlength: [500, 'Highlighted quote cannot exceed 500 characters'],
     },
     featuredImage: {
       url: {
@@ -60,12 +60,14 @@ const blogSchema = new Schema<IBlog>(
     },
     category: {
       type: String,
-      required: [true, 'Category is required'],
       trim: true,
     },
     tags: {
       type: [String],
       default: [],
+    },
+    publishDate: {
+      type: Date,
     },
     status: {
       type: String,
@@ -85,9 +87,21 @@ const blogSchema = new Schema<IBlog>(
   }
 );
 
-// Create slug from title before saving
+// Create slug from title before validation
+blogSchema.pre('validate', function (next) {
+  if (this.title && !this.slug) {
+    this.slug = this.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+  next();
+});
+
+// Update slug if title changes and set publishedAt
 blogSchema.pre('save', function (next) {
-  if (this.isModified('title') && !this.slug) {
+  // Update slug if title changes
+  if (this.isModified('title')) {
     this.slug = this.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -103,7 +117,7 @@ blogSchema.pre('save', function (next) {
 });
 
 // Index for better query performance
-blogSchema.index({ slug: 1 });
+blogSchema.index({ slug: 1 }, { unique: true });
 blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1 });
 blogSchema.index({ tags: 1 });

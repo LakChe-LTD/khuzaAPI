@@ -14,22 +14,13 @@ export interface IEvent extends Document {
   }>;
   location: {
     venue: string;
-    address: string;
     city: string;
-    country: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    };
   };
   startDate: Date;
-  endDate: Date;
-  category: string;
+  endDate?: Date;
+  category?: string;
   tags: string[];
   organizer: mongoose.Types.ObjectId;
-  capacity?: number;
-  registrationRequired: boolean;
-  registrationDeadline?: Date;
   price?: {
     amount: number;
     currency: string;
@@ -51,10 +42,10 @@ const eventSchema = new Schema<IEvent>(
     },
     slug: {
       type: String,
-      required: true,
       unique: true,
       lowercase: true,
       trim: true,
+      // Remove required: true to let pre-save hook handle it
     },
     description: {
       type: String,
@@ -81,21 +72,9 @@ const eventSchema = new Schema<IEvent>(
         type: String,
         required: [true, 'Venue is required'],
       },
-      address: {
-        type: String,
-        required: [true, 'Address is required'],
-      },
       city: {
         type: String,
         required: [true, 'City is required'],
-      },
-      country: {
-        type: String,
-        required: [true, 'Country is required'],
-      },
-      coordinates: {
-        latitude: Number,
-        longitude: Number,
       },
     },
     startDate: {
@@ -104,17 +83,15 @@ const eventSchema = new Schema<IEvent>(
     },
     endDate: {
       type: Date,
-      required: [true, 'End date is required'],
       validate: {
         validator: function (this: IEvent, value: Date) {
-          return value >= this.startDate;
+          return !value || value >= this.startDate;
         },
         message: 'End date must be after start date',
       },
     },
     category: {
       type: String,
-      required: [true, 'Category is required'],
       trim: true,
     },
     tags: {
@@ -125,17 +102,6 @@ const eventSchema = new Schema<IEvent>(
       type: Schema.Types.ObjectId,
       ref: 'Admin',
       required: [true, 'Organizer is required'],
-    },
-    capacity: {
-      type: Number,
-      min: [1, 'Capacity must be at least 1'],
-    },
-    registrationRequired: {
-      type: Boolean,
-      default: false,
-    },
-    registrationDeadline: {
-      type: Date,
     },
     price: {
       amount: {
@@ -166,9 +132,20 @@ const eventSchema = new Schema<IEvent>(
   }
 );
 
-// Create slug from title before saving
+// Create slug from title before validation
+eventSchema.pre('validate', function (next) {
+  if (this.title && !this.slug) {
+    this.slug = this.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+  next();
+});
+
+// Update slug if title changes
 eventSchema.pre('save', function (next) {
-  if (this.isModified('title') && !this.slug) {
+  if (this.isModified('title')) {
     this.slug = this.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -178,8 +155,8 @@ eventSchema.pre('save', function (next) {
 });
 
 // Index for better query performance
-eventSchema.index({ slug: 1 });
-eventSchema.index({ startDate: 1, endDate: 1 });
+eventSchema.index({ slug: 1 }, { unique: true });
+eventSchema.index({ startDate: 1 });
 eventSchema.index({ status: 1 });
 eventSchema.index({ category: 1 });
 eventSchema.index({ isFeatured: 1 });

@@ -1,26 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/env';
-import Admin, { IAdmin } from '../models/Admin'; 
+ // Ensure .js extension
+import Admin, { IAdmin } from '../models/Admin.js'; 
+import { config } from '../config/env.js';
 
-/**
- * Custom Interface to extend the Express Request
- * This allows us to use req.admin in our controllers
- */
 export interface AuthRequest extends Request {
   admin?: IAdmin;
 }
 
-/**
- * Middleware to authenticate the token
- */
 export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // 1. Get token from header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -33,11 +26,9 @@ export const authenticate = async (
     
     const token = authHeader.split(' ')[1];
     
-    // 2. Verify token (added type casting to fix the red underline)
+    // CORRECTION: Cast as { id: string } to fix TypeScript error
     const decoded = jwt.verify(token, config.jwt.secret as string) as { id: string };
     
-    // 3. Get admin from database 
-    // FIXED: Use 'Admin' (Model) instead of 'admin' (variable)
     const admin = await Admin.findById(decoded.id).select('-password');
     
     if (!admin) {
@@ -56,54 +47,22 @@ export const authenticate = async (
       return;
     }
     
-    // 4. Attach admin to request
-    req.admin = admin;
+    req.admin = admin as IAdmin;
     next();
   } catch (error: any) {
-    if (error.name === 'JsonWebTokenError') {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid token.',
-      });
-      return;
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      res.status(401).json({
-        success: false,
-        message: 'Token expired.',
-      });
-      return;
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Authentication error.',
-    });
+    res.status(401).json({ success: false, message: 'Invalid or expired token.' });
   }
 };
 
-/**
- * Middleware to authorize specific roles
- */
 export const authorize = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.admin) {
-      res.status(401).json({
-        success: false,
-        message: 'Authentication required.',
-      });
-      return;
-    }
-    
-    if (!roles.includes(req.admin.role)) {
+    if (!req.admin || !roles.includes(req.admin.role)) {
       res.status(403).json({
         success: false,
         message: 'You do not have permission to perform this action.',
       });
       return;
     }
-    
     next();
   };
 };

@@ -1,8 +1,8 @@
 import { Response } from 'express';
-import Blog from '../models/Blog';
-import { AuthRequest } from '../middleware/auth';
-import { uploadImage, deleteImage } from '../utils/cloudinary';
-import { formatBlogForList, formatBlogForDetail } from '../utils/responseFormatter';
+import { AuthRequest } from "../middleware/auth.js";
+import Blog from "../models/Blog.js";
+import { deleteImage, uploadImage } from "../utils/cloudinary.js";
+import { formatBlogForDetail, formatBlogForList } from "../utils/responseFormatter.js";
 
 /**
  * @route   POST /api/blogs
@@ -14,7 +14,7 @@ export const createBlog = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, content, excerpt, category, tags, status } = req.body;
+    const { title, content, highlightedQuote, category, tags, publishDate, status } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -32,14 +32,15 @@ export const createBlog = async (
     const blog = await Blog.create({
       title,
       content,
-      excerpt,
+      highlightedQuote: highlightedQuote || undefined,
       featuredImage: {
         url: imageResult.url,
         publicId: imageResult.publicId,
       },
       author: req.admin?._id,
-      category,
+      category: category || undefined,
       tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
+      publishDate: publishDate || undefined,
       status: status || 'draft',
     });
 
@@ -91,7 +92,7 @@ export const getBlogs = async (req: AuthRequest, res: Response): Promise<void> =
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
         { content: { $regex: search, $options: 'i' } },
-        { excerpt: { $regex: search, $options: 'i' } },
+        { highlightedQuote: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -190,7 +191,7 @@ export const updateBlog = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { title, content, excerpt, category, tags, status } = req.body;
+    const { title, content, highlightedQuote, category, tags, publishDate, status } = req.body;
     const file = req.file;
 
     const blog = await Blog.findById(id);
@@ -206,9 +207,10 @@ export const updateBlog = async (
     // Update fields
     if (title) blog.title = title;
     if (content) blog.content = content;
-    if (excerpt) blog.excerpt = excerpt;
-    if (category) blog.category = category;
+    if (highlightedQuote !== undefined) blog.highlightedQuote = highlightedQuote;
+    if (category !== undefined) blog.category = category;
     if (tags) blog.tags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+    if (publishDate !== undefined) blog.publishDate = publishDate;
     if (status) blog.status = status;
 
     // Update featured image if provided

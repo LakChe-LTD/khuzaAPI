@@ -1,15 +1,17 @@
 import express from 'express';
-import {
-  createBlog,
-  getBlogs,
-  getBlog,
-  updateBlog,
-  deleteBlog,
-  getBlogsByCategory,
-  getRecentBlogs,
-} from '../controllers/blogController';
-import { authenticate } from '../middleware/auth';
-import { uploadSingle } from '../middleware/upload';
+// import {
+//   createBlog,
+//   getBlogs,
+//   getBlog,
+//   updateBlog,
+//   deleteBlog,
+//   getBlogsByCategory,
+//   getRecentBlogs,
+// } from '../controllers/blogController';
+import { authenticate } from '../middleware/auth.js';
+import { uploadSingle } from '../middleware/upload.js';
+import { createBlog, deleteBlog, getBlog, getBlogs, getBlogsByCategory, getRecentBlogs, updateBlog } from '../controllers/blogController.js';
+
 
 const router = express.Router();
 
