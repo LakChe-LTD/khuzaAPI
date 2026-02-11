@@ -1,16 +1,29 @@
-import { IBlog } from '../models/Blog';
-import { IEvent } from '../models/Event';
+// import { IBlog } from '../models/Blog';
+// import { IEvent } from '../models/Event';
+
+import { IBlog } from "../models/Blog.js";
+import { IEvent } from "../models/Event.js";
 
 /**
  * Format blog for listing view (matches your frontend card design)
+ * 
+ * FIX: featuredImage is now returned as { url, publicId } object — not a plain string.
+ * Previously it returned blog.featuredImage.url (a string), but AdminBlogs.tsx
+ * accesses blog.featuredImage?.url, so the image never rendered.
  */
 export const formatBlogForList = (blog: IBlog) => {
   return {
-    id: blog._id,
+    id: blog._id.toString(),
     title: blog.title,
     slug: blog.slug,
+    // ADDED: content & highlightedQuote so the admin list card can render them
+    content: blog.content,
+    highlightedQuote: blog.highlightedQuote,
     excerpt: blog.excerpt,
-    featuredImage: blog.featuredImage.url,
+    featuredImage: {
+      url: blog.featuredImage.url,
+      publicId: blog.featuredImage.publicId,
+    },
     category: blog.category,
     tags: blog.tags,
     author: {
@@ -18,6 +31,7 @@ export const formatBlogForList = (blog: IBlog) => {
       email: (blog.author as any)?.email,
     },
     publishedAt: blog.publishedAt,
+    createdAt: blog.createdAt,
     formattedDate: formatDate(blog.publishedAt || blog.createdAt),
     views: blog.views,
     status: blog.status,
@@ -29,12 +43,17 @@ export const formatBlogForList = (blog: IBlog) => {
  */
 export const formatBlogForDetail = (blog: IBlog) => {
   return {
-    id: blog._id,
+    id: blog._id.toString(),
     title: blog.title,
     slug: blog.slug,
     content: blog.content,
+    highlightedQuote: blog.highlightedQuote,
     excerpt: blog.excerpt,
-    featuredImage: blog.featuredImage.url,
+    // FIXED: consistent object shape here too
+    featuredImage: {
+      url: blog.featuredImage.url,
+      publicId: blog.featuredImage.publicId,
+    },
     category: blog.category,
     tags: blog.tags,
     author: {
@@ -55,26 +74,31 @@ export const formatBlogForDetail = (blog: IBlog) => {
  */
 export const formatEventForList = (event: IEvent) => {
   return {
-    id: event._id,
+    id: event._id.toString(),
     title: event.title,
     slug: event.slug,
-    description: event.description.substring(0, 200) + '...', // Truncate for card
-    coverImage: event.coverImage.url,
+    description: event.description.length > 200
+      ? event.description.substring(0, 200) + '...'
+      : event.description,
+    coverImage: {
+      url: event.coverImage.url,
+      publicId: event.coverImage.publicId,
+    },
     location: {
       venue: event.location.venue,
       city: event.location.city,
-      country: event.location.country,
+      country: event.location.country || '',
     },
     startDate: event.startDate,
     endDate: event.endDate,
     formattedStartDate: formatDate(event.startDate),
-    formattedEndDate: formatDate(event.endDate),
+    formattedEndDate: event.endDate ? formatDate(event.endDate) : null,
     category: event.category,
     tags: event.tags,
     status: event.status,
     isFeatured: event.isFeatured,
     capacity: event.capacity,
-    registrationRequired: event.registrationRequired,
+    registrationRequired: event.registrationRequired || false,
     price: event.price,
     views: event.views,
   };
@@ -85,17 +109,23 @@ export const formatEventForList = (event: IEvent) => {
  */
 export const formatEventForDetail = (event: IEvent) => {
   return {
-    id: event._id,
+    id: event._id.toString(),
     title: event.title,
     slug: event.slug,
     description: event.description,
-    coverImage: event.coverImage.url,
-    images: event.images.map((img) => img.url),
+    coverImage: {
+      url: event.coverImage.url,
+      publicId: event.coverImage.publicId,
+    },
+    images: event.images.map((img) => ({
+      url: img.url,
+      publicId: img.publicId,
+    })),
     location: event.location,
     startDate: event.startDate,
     endDate: event.endDate,
     formattedStartDate: formatDate(event.startDate),
-    formattedEndDate: formatDate(event.endDate),
+    formattedEndDate: event.endDate ? formatDate(event.endDate) : null,
     category: event.category,
     tags: event.tags,
     organizer: {
@@ -105,7 +135,7 @@ export const formatEventForDetail = (event: IEvent) => {
     status: event.status,
     isFeatured: event.isFeatured,
     capacity: event.capacity,
-    registrationRequired: event.registrationRequired,
+    registrationRequired: event.registrationRequired || false,
     registrationDeadline: event.registrationDeadline,
     formattedRegistrationDeadline: event.registrationDeadline
       ? formatDate(event.registrationDeadline)

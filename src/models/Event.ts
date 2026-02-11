@@ -15,6 +15,7 @@ export interface IEvent extends Document {
   location: {
     venue: string;
     city: string;
+    country?: string; // ADD THIS
   };
   startDate: Date;
   endDate?: Date;
@@ -27,6 +28,9 @@ export interface IEvent extends Document {
   };
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   isFeatured: boolean;
+  capacity?: number; // ADD THIS
+  registrationRequired?: boolean; // ADD THIS
+  registrationDeadline?: Date; // ADD THIS
   views: number;
   createdAt: Date;
   updatedAt: Date;
@@ -45,7 +49,6 @@ const eventSchema = new Schema<IEvent>(
       unique: true,
       lowercase: true,
       trim: true,
-      // Remove required: true to let pre-save hook handle it
     },
     description: {
       type: String,
@@ -75,6 +78,9 @@ const eventSchema = new Schema<IEvent>(
       city: {
         type: String,
         required: [true, 'City is required'],
+      },
+      country: {
+        type: String,
       },
     },
     startDate: {
@@ -121,6 +127,17 @@ const eventSchema = new Schema<IEvent>(
     isFeatured: {
       type: Boolean,
       default: false,
+    },
+    capacity: {
+      type: Number,
+      min: [0, 'Capacity cannot be negative'],
+    },
+    registrationRequired: {
+      type: Boolean,
+      default: false,
+    },
+    registrationDeadline: {
+      type: Date,
     },
     views: {
       type: Number,
