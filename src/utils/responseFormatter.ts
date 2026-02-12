@@ -1,25 +1,14 @@
-// import { IBlog } from '../models/Blog';
-// import { IEvent } from '../models/Event';
-
 import { IBlog } from "../models/Blog.js";
 import { IEvent } from "../models/Event.js";
 
-/**
- * Format blog for listing view (matches your frontend card design)
- * 
- * FIX: featuredImage is now returned as { url, publicId } object — not a plain string.
- * Previously it returned blog.featuredImage.url (a string), but AdminBlogs.tsx
- * accesses blog.featuredImage?.url, so the image never rendered.
- */
 export const formatBlogForList = (blog: IBlog) => {
   return {
     id: blog._id.toString(),
     title: blog.title,
     slug: blog.slug,
-    // ADDED: content & highlightedQuote so the admin list card can render them
     content: blog.content,
     highlightedQuote: blog.highlightedQuote,
-    excerpt: blog.excerpt,
+    excerpt: (blog as any).excerpt || blog.content?.substring(0, 200), // Temporary fix
     featuredImage: {
       url: blog.featuredImage.url,
       publicId: blog.featuredImage.publicId,
@@ -38,9 +27,6 @@ export const formatBlogForList = (blog: IBlog) => {
   };
 };
 
-/**
- * Format blog for detail view (matches your single blog page)
- */
 export const formatBlogForDetail = (blog: IBlog) => {
   return {
     id: blog._id.toString(),
@@ -48,8 +34,7 @@ export const formatBlogForDetail = (blog: IBlog) => {
     slug: blog.slug,
     content: blog.content,
     highlightedQuote: blog.highlightedQuote,
-    excerpt: blog.excerpt,
-    // FIXED: consistent object shape here too
+    excerpt: (blog as any).excerpt || blog.content?.substring(0, 200), // Temporary fix
     featuredImage: {
       url: blog.featuredImage.url,
       publicId: blog.featuredImage.publicId,

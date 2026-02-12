@@ -5,7 +5,7 @@
   "description": "Khuza Backend API",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "seed": "tsx src/scripts/seedAdmin.ts",
     "start": "node dist/server.js",

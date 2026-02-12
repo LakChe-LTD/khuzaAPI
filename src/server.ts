@@ -5,12 +5,12 @@ import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 
-import { config, validateEnv } from './src/config/env.js';
-import { connectDatabase } from './src/config/database.js';
-import authRoutes from './src/routes/auth.js';
-import blogRoutes from './src/routes/blog.js';
-import eventRoutes from './src/routes/event.js';
-import { errorHandler, notFound } from './src/middleware/errorHandler.js';
+import { config, validateEnv } from './config/env';
+import { connectDatabase } from './config/database';
+import authRoutes from './routes/auth';
+import blogRoutes from './routes/blog';
+import eventRoutes from './routes/event';
+import { errorHandler, notFound } from './middleware/errorHandler';
 
 // Validate environment variables before starting
 validateEnv();
