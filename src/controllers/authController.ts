@@ -88,3 +88,38 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(500).json({ success: false, message: 'Failed to get profile' });
   }
 };
+
+// ADD THIS NEW FUNCTION
+export const deleteAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Prevent self-deletion
+    if (req.admin?._id.toString() === id) {
+      res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+      return;
+    }
+
+    const admin = await Admin.findById(id);
+    
+    if (!admin) {
+      res.status(404).json({ success: false, message: 'Admin not found' });
+      return;
+    }
+
+    // Prevent deleting super_admin (optional - for extra security)
+    if (admin.role === 'super_admin') {
+      res.status(403).json({ success: false, message: 'Cannot delete super admin account' });
+      return;
+    }
+
+    await Admin.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin deleted successfully',
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to delete admin' });
+  }
+};

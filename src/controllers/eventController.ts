@@ -58,6 +58,7 @@ export const createEvent = async (req: AuthRequest, res: Response): Promise<void
     const populated = await event.populate('organizer', 'name email');
     res.status(201).json({ success: true, message: 'Event created successfully', data: formatEventForDetail(populated) });
   } catch (error: any) {
+    console.error('Create Event Error:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to create event' });
   }
 };
@@ -101,6 +102,7 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
       }
     });
   } catch (error: any) {
+    console.error('Get Events Error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch events' });
   }
 };
@@ -127,19 +129,24 @@ export const getEvent = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({ success: true, data: formatEventForDetail(event) });
   } catch (error: any) {
+    console.error('Get Event Error:', error);
     res.status(500).json({ success: false, message: 'Error retrieving event' });
   }
 };
 
-/**
- * @route   PUT /api/events/:id
- * @desc    Update event (including Cloudinary image swap)
- * @access  Private (Admin)
- */
 export const updateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    
+    console.log('UPDATE EVENT - ID received:', id);
+    
+    if (!id || id === 'undefined') {
+      res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return;
+    }
+
     const event = await Event.findById(id);
+
     if (!event) {
       res.status(404).json({ success: false, message: 'Event not found' });
       return;
@@ -148,18 +155,22 @@ export const updateEvent = async (req: AuthRequest, res: Response): Promise<void
     const updates = { ...req.body };
     const files = req.files as Express.Multer.File[];
 
-    // Parse stringified JSON fields from FormData
-    if (updates.location) updates.location = typeof updates.location === 'string' ? JSON.parse(updates.location) : updates.location;
-    if (updates.tags) updates.tags = typeof updates.tags === 'string' ? JSON.parse(updates.tags) : updates.tags;
-    if (updates.price) updates.price = typeof updates.price === 'string' ? JSON.parse(updates.price) : updates.price;
-    
-    // Handle Boolean strings
-    if (updates.isFeatured !== undefined) updates.isFeatured = updates.isFeatured === 'true';
+    if (updates.location && typeof updates.location === 'string') {
+      updates.location = JSON.parse(updates.location);
+    }
+    if (updates.tags && typeof updates.tags === 'string') {
+      updates.tags = JSON.parse(updates.tags);
+    }
+    if (updates.price && typeof updates.price === 'string') {
+      updates.price = JSON.parse(updates.price);
+    }
+    if (updates.isFeatured !== undefined) {
+      updates.isFeatured = String(updates.isFeatured) === 'true';
+    }
 
-    // Image logic: If new files uploaded, replace old ones
     if (files && files.length > 0) {
-      await deleteImage(event.coverImage.publicId);
-      if (event.images.length > 0) await deleteMultipleImages(event.images.map(img => img.publicId));
+      if (event.coverImage?.publicId) await deleteImage(event.coverImage.publicId);
+      if (event.images?.length > 0) await deleteMultipleImages(event.images.map(img => img.publicId));
 
       const coverRes = await uploadImage(files[0].buffer, 'khuza/uploads/events');
       updates.coverImage = { url: coverRes.url, publicId: coverRes.publicId };
@@ -167,35 +178,80 @@ export const updateEvent = async (req: AuthRequest, res: Response): Promise<void
       if (files.length > 1) {
         const galleryRes = await uploadMultipleImages(files.slice(1), 'khuza/uploads/events');
         updates.images = galleryRes.map(r => ({ url: r.url, publicId: r.publicId }));
+      } else {
+        updates.images = [];
       }
     }
 
-    const updatedEvent = await Event.findByIdAndUpdate(id, updates, { new: true }).populate('organizer', 'name email');
-    res.status(200).json({ success: true, data: formatEventForDetail(updatedEvent!) });
+    const updatedEvent = await Event.findByIdAndUpdate(
+      event._id, 
+      updates, 
+      { new: true, runValidators: true }
+    ).populate('organizer', 'name email');
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Event updated successfully',
+      data: formatEventForDetail(updatedEvent!) 
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Update failed' });
+    console.error("Update Error:", error);
+    res.status(500).json({ success: false, message: error.message || 'Update failed' });
   }
 };
 
 /**
  * @route   DELETE /api/events/:id
- * @desc    Delete event and Cloudinary assets
+ * @desc    Delete an event
  * @access  Private (Admin)
  */
 export const deleteEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const event = await Event.findById(req.params.id);
+    const { id } = req.params;
+    
+    console.log('=== DELETE EVENT ===');
+    console.log('ID:', id);
+    
+    // Check if ID is valid ObjectId format
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      res.status(400).json({ success: false, message: 'Invalid event ID format' });
+      return;
+    }
+    
+    const event = await Event.findById(id);
+    
     if (!event) {
+      console.log('Event not found');
       res.status(404).json({ success: false, message: 'Event not found' });
       return;
     }
 
-    await deleteImage(event.coverImage.publicId);
-    if (event.images.length > 0) await deleteMultipleImages(event.images.map(img => img.publicId));
+    console.log('Deleting event:', event.title);
+
+    // Delete assets from Cloudinary
+    if (event.coverImage?.publicId) {
+      console.log('Deleting cover image');
+      await deleteImage(event.coverImage.publicId);
+    }
+    
+    if (event.images?.length > 0) {
+      console.log('Deleting gallery images');
+      await deleteMultipleImages(event.images.map(img => img.publicId));
+    }
 
     await event.deleteOne();
-    res.status(200).json({ success: true, message: 'Event deleted successfully' });
+    
+    console.log('Event deleted successfully');
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Event deleted successfully' 
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Deletion failed' });
+    console.error('Delete Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Deletion failed' 
+    });
   }
 };

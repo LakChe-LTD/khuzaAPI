@@ -182,25 +182,20 @@ export const getBlog = async (req: AuthRequest, res: Response): Promise<void> =>
 
 /**
  * @route   PUT /api/blogs/:id
- * @desc    Update a blog
- * @access  Private
+ * @desc    Update a blog (Handles both ID and Slug)
  */
-export const updateBlog = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
+export const updateBlog = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { title, content, highlightedQuote, category, tags, publishDate, status } = req.body;
     const file = req.file;
 
-    const blog = await Blog.findById(id);
+    // Support both ID and Slug for finding the blog
+    const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slug: id };
+    const blog = await Blog.findOne(query);
 
     if (!blog) {
-      res.status(404).json({
-        success: false,
-        message: 'Blog not found',
-      });
+      res.status(404).json({ success: false, message: 'Blog not found' });
       return;
     }
 
@@ -209,16 +204,20 @@ export const updateBlog = async (
     if (content) blog.content = content;
     if (highlightedQuote !== undefined) blog.highlightedQuote = highlightedQuote;
     if (category !== undefined) blog.category = category;
-    if (tags) blog.tags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+    
+    // Parse tags if they come as a JSON string from FormData
+    if (tags) {
+      blog.tags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+    }
+    
     if (publishDate !== undefined) blog.publishDate = publishDate;
     if (status) blog.status = status;
 
-    // Update featured image if provided
+    // Update featured image if a new one is provided
     if (file) {
-      // Delete old image
-      await deleteImage(blog.featuredImage.publicId);
-
-      // Upload new image
+      if (blog.featuredImage?.publicId) {
+        await deleteImage(blog.featuredImage.publicId);
+      }
       const imageResult = await uploadImage(file.buffer, 'khuza/uploads/blogs');
       blog.featuredImage = {
         url: imageResult.url,
@@ -226,60 +225,43 @@ export const updateBlog = async (
       };
     }
 
+    // .save() is better here than findByIdAndUpdate because it triggers 
+    // your 'pre-save' hooks for the slug and publishedAt logic!
     await blog.save();
 
     const updatedBlog = await Blog.findById(blog._id).populate('author', 'name email');
-
     res.status(200).json({
       success: true,
       message: 'Blog updated successfully',
       data: formatBlogForDetail(updatedBlog!),
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to update blog',
-    });
+    res.status(500).json({ success: false, message: error.message || 'Failed to update blog' });
   }
 };
 
 /**
  * @route   DELETE /api/blogs/:id
- * @desc    Delete a blog
- * @access  Private
  */
-export const deleteBlog = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
+export const deleteBlog = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slug: id };
 
-    const blog = await Blog.findById(id);
-
+    const blog = await Blog.findOne(query);
     if (!blog) {
-      res.status(404).json({
-        success: false,
-        message: 'Blog not found',
-      });
+      res.status(404).json({ success: false, message: 'Blog not found' });
       return;
     }
 
-    // Delete image from Cloudinary
-    await deleteImage(blog.featuredImage.publicId);
+    if (blog.featuredImage?.publicId) {
+      await deleteImage(blog.featuredImage.publicId);
+    }
 
-    // Delete blog
     await blog.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: 'Blog deleted successfully',
-    });
+    res.status(200).json({ success: true, message: 'Blog deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to delete blog',
-    });
+    res.status(500).json({ success: false, message: 'Failed to delete blog' });
   }
 };
 
