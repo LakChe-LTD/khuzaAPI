@@ -10,9 +10,7 @@ yarn-error.log*
 .env.development
 .env.production
 
-# Build output
-dist/
-build/
+
 
 # IDE
 .vscode/
