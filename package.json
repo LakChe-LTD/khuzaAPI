@@ -1,7 +1,6 @@
 {
   "name": "khuza-backend",
   "version": "1.0.0",
-  "type": "module",
   "description": "Khuza Backend API",
   "main": "dist/server.js",
   "scripts": {
