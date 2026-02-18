@@ -1,21 +1,35 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2020"],
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "allowImportingTsExtensions": false,
-    "declaration": false,
-    "sourceMap": true,
-    "removeComments": true
+    /* Language & Environment */
+    "target": "ES2020",                        // Compile to ES2020 JavaScript
+    "lib": ["ES2020"],                         // Use ES2020 standard library
+
+    /* Modules - Correct for Node.js backend */
+    "module": "CommonJS",                      // Node.js uses CommonJS (require/exports)
+    "moduleResolution": "node",                // Use Node.js module resolution strategy
+
+    /* Output */
+    "outDir": "./dist",                        // Compiled JS goes to dist/
+    "rootDir": "./src",                        // Source TypeScript files are in src/
+
+    /* Interop */
+    "esModuleInterop": true,                   // Allows default imports from CommonJS modules
+    "allowSyntheticDefaultImports": true,      // Works with esModuleInterop
+    "resolveJsonModule": true,                 // Allow importing .json files
+
+    /* Type Checking */
+    "strict": true,                            // Enable all strict type checks
+    "skipLibCheck": true,                      // Skip type checking of node_modules
+    "forceConsistentCasingInFileNames": true,  // Prevent casing bugs across OS
+
+    /* Output Options */
+    "declaration": false,                      // No .d.ts files needed for a backend app
+    "sourceMap": true,                         // Generate source maps for debugging
+    "removeComments": true,                    // Strip comments from compiled output
+
+    /* Additional */
+    "allowImportingTsExtensions": false        // Don't allow .ts extensions in imports
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts"],   // Only compile files inside src/
+  "exclude": ["node_modules", "dist"]  // Ignore these folders
 }
