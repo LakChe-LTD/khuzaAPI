@@ -48,12 +48,27 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Health Check Route (Great for monitoring and tallying with frontend connectivity tests)
+// Health Check Route
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ 
     success: true, 
     message: 'Khuza API is active and healthy',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Base API Route
+app.get('/api', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    success: true, 
+    message: 'Welcome to KhuzaAPI!',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      blogs: '/api/blogs',
+      events: '/api/events'
+    }
   });
 });
 
