@@ -45,6 +45,19 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+app.get('/api', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'Welcome to KhuzaAPI!',
+        version: '1.0.0',
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth',
+            blogs: '/api/blogs',
+            events: '/api/events'
+        }
+    });
+});
 app.use('/api', limiter);
 app.use('/api/auth', auth_1.default);
 app.use('/api/blogs', blog_1.default);
