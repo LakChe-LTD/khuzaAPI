@@ -25,10 +25,32 @@ app.set('trust proxy', 1);
 
 // Standard Middlewares
 app.use(helmet());
+
+/**
+ * UPDATED CORS LOGIC
+ * This allows multiple origins: your local machine and the live site.
+ */
+const allowedOrigins = [
+  'http://localhost:3000', // Local frontend
+  config.cors.origin       // Production frontend from .env
+];
+
 app.use(cors({ 
-  origin: config.cors.origin, // Ensure this matches your frontend URL in .env
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    // Check if the requesting site is in our allowed list or if we are in dev mode
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.error(`CORS blocked request from: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true 
 }));
+
 app.use(morgan('dev'));
 app.use(compression());
 
